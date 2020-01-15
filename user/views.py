@@ -1,8 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from django.contrib import messages
 from user.models import User
 from .forms import SigninForm, SignupForm
 import hashlib
+
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.core.mail import EmailMessage
+from .tokens import account_activation_token
+from django.utils.encoding import force_bytes, force_text
 
 # Create your views here.
 def index(request):
@@ -12,20 +20,41 @@ def signup(request):
     if request.method == "POST":
         form = SignupForm(request.POST)
         if form.is_valid():
-            if request.POST.get("password"," ") == request.POST.get("confirm_password"," "):
-                name = request.POST.get("name"," ")
+            if str(request.POST["password"]) == str(request.POST["confirm_password"]):
+                name = str(request.POST["name"])
 
-                str = request.POST.get("password"," ")
-                password = hashlib.sha256(str.encode()).hexdigest()
+                temp = str(request.POST["password"])
+                password = hashlib.sha256(temp.encode()).hexdigest()
 
-                email = request.POST.get("email"," ")
+                email = str(request.POST["email"])
 
                 user_in_db = User.objects.filter(email = email)
                 if user_in_db.count() == 0:
                     user = User(name = name, password = password, email = email)
+                    #user = form.save(commit = False)
                     user.is_active = False
                     user.save()
-                    messages.info(request, name + "님 환영합니다.")
+
+                    #이메일인증
+                    current_site = get_current_site(request)
+                    # localhost:8000
+                    message = render_to_string('user/user_activate_email.html', {
+                        'user': user,
+                        'domain': current_site.domain,
+                        'uid': urlsafe_base64_encode(force_bytes(user.pk)).decode(),
+                        'token': account_activation_token.make_token(user),
+                    })
+
+                    mail_subject = "회원가입 인증 메일입니다."
+                    user_email = email
+                    email = EmailMessage(mail_subject, message, to=[user_email])
+                    email.send()
+                    return HttpResponse(
+                        '<div style="font-size: 40px; width: 100%; height:100%; display:flex; text-align:center; '
+                        'justify-content: center; align-items: center; font-family: "Montserrat", "sans-serif";" >'
+                        '입력하신 이메일<span>로 인증 링크가 전송되었습니다.</span>'
+                        '</div>'
+                    )
                     return redirect('/')
                 else:
                     messages.info(request, "동일한 이메일이 존재합니다.")
@@ -38,12 +67,13 @@ def signup(request):
 
 def signin(request):
     if request.method == "POST":
+        
         form = SigninForm(request.POST)
         if form.is_valid():
             user = User.objects.filter(email=str(request.POST["email"]))
             if user:
-                str = str(request.POST["password"])
-                password = hashlib.sha256(str.encode()).hexdigest()
+                temp = str(request.POST["password"])
+                password = hashlib.sha256(temp.encode()).hexdigest()
 
                 if user[0].password == password:
                     messages.info(request, user[0].name + "님 환영합니다.")
@@ -58,3 +88,15 @@ def signin(request):
         form = SigninForm()
         return render(request, 'user/signin.html', {'form': form})
 
+def activate(request, uid64, token):
+
+    uid = force_text(urlsafe_base64_decode(uid64))
+    user = User.objects.get(pk=uid)
+
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.save()
+        #로그인해주는 부분
+        return redirect('/')
+    else:
+        return HttpResponse('비정상적인 접근입니다.')
