@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rapid Bootstrap Template</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicons -->
+    <link href="{% static 'img/favicon.png' %}" rel="icon">
+    <link href="{% static 'img/apple-touch-icon.png' %}" rel="apple-touch-icon">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,500,600,700,700i|Montserrat:300,400,500,600,700" rel="stylesheet">
+
+    <!-- Bootstrap CSS File -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!-- Libraries CSS Files -->
+    <link href="{% static 'lib/font-awesome/css/font-awesome.min.css' %}" rel="stylesheet">
+    <link href="{% static 'lib/animate/animate.min.css' %}" rel="stylesheet">
+    <link href="{% static 'lib/ionicons/css/ionicons.min.css' %}" rel="stylesheet">
+    <link href="{% static 'lib/owlcarousel/assets/owl.carousel.min.css' %}" rel="stylesheet">
+    <link href="{% static 'lib/lightbox/css/lightbox.min.css' %}" rel="stylesheet">
+
+    <!-- Main Stylesheet File -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+
+     <!-- =======================================================
+      Theme Name: Rapid
+      Theme URL: https://bootstrapmade.com/rapid-multipurpose-bootstrap-business-template/
+      Author: BootstrapMade.com
+      License: https://bootstrapmade.com/license/
+    ======================================================= -->
+</head>
+
+<body>
+<!--==========================
+Header
+============================-->
+<header id="header">
+
+    <div class="container">
+
+        <div class="logo float-left">
+            <!-- Uncomment below if you prefer to use an image logo -->
+            <h1 class="text-light"><a href="#intro" class="scrollto"><span>Rapid</span></a></h1>
+            <!-- <a href="#header" class="scrollto"><img src="img/logo.png" alt="" class="img-fluid"></a> -->
+        </div>
+
+        <nav class="main-nav float-right d-none d-lg-block">
+            <ul>
+                <li class="active"><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="#services">Mypage</a></li>
+                <li><a href="{% url 'signin' %}">Signin</a></li>
+                <li><a href="{% url 'signup' %}">Signup</a></li>
+                <li><a href="#team">Signout</a></li>
+            </ul>
+        </nav><!-- .main-nav -->
+
+    </div>
+</header><!-- #header -->
+
+<!--==========================
+  Intro Section
+============================-->
+<div style="background: #f5f8fd; padding: 10% 10%; height: 100%">
+    <div class="row" style="margin-top: 10px">
+        <div class="col-lg-6">
+            <div class="signup" style=" margin: 10% 15% 10%;">
+
+                <div class="form" style="font-family: 'Montserrat', 'sans-serif';">
+
+                    {% block content %}
+                    <h4>Sign In</h4>
+                    <p>Welcome our Authorization System.</p>
+                    <form action="{% url 'signin' %}" method="POST" class="post-form contactForm">{% csrf_token %}
+                        <div class="form-group">
+                            <input type="text" name="email" class="form-control" id="email" placeholder="Your Email" data-rule="minlen:4" data-msg="Please enter at least 4 chars"required autofocus />
+                            <div class="validation"></div>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="password" id="password" placeholder="Your Password" data-rule="minlen: 8" data-msg="Please enter at least 8 chars"required autofocus/>
+                            <div class="validation"></div>
+                        </div>
+
+                        <!-- <div id="sendmessage">Your message has been sent. Thank you!</div> -->
+                        <!-- <div id="errormessage"></div> -->
+                        <br>
+                        <div class="text-center"><button type="submit" title="Sign In">Sign In</button></div>
+                    </form>
+                {%  endblock %}
+                </div>
+
+            </div>
+        </div>
+        <div class="col-lg-6 wow fadeInUp">
+            <img src="{%  static 'img/features-1.svg' %}" class="img-fluid" alt="">
+        </div>
+    </div>
+</div>
+</body>
+
+
+<!--==========================
+  Footer
+============================-->
+<footer id="footer" class="section-bg" style="background: #f5f8fd;">
+    <div class="container">
+        <div class="copyright">
+            &copy; Copyright <strong>Rapid</strong>. All Rights Reserved
+        </div>
+        <div class="credits">
+            <!--
+              All the links in the footer should remain intact.
+              You can delete the links only if you purchased the pro version.
+              Licensing information: https://bootstrapmade.com/license/
+              Purchase the pro version with working PHP/AJAX contact form: https://bootstrapmade.com/buy/?theme=Rapid
+            -->
+            Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+        </div>
+    </div>
+</footer><!-- #footer -->
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags %}  <script>alert("{{ message }}")</script> {% endif %}
+        {% endfor %}
+    {% endif %}
+
+<!-- JavaScript Libraries -->
+<script src="{% static 'lib/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'lib/jquery/jquery-migrate.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'lib/easing/easing.min.js' %}"></script>
+<script src="{% static 'lib/mobile-nav/mobile-nav.js' %}"></script>
+<script src="{% static 'lib/wow/wow.min.js' %}"></script>
+<script src="{% static 'lib/waypoints/waypoints.min.js' %}"></script>
+<script src="{% static 'lib/counterup/counterup.min.js' %}"></script>
+<script src="{% static 'lib/owlcarousel/owl.carousel.min.js' %}"></script>
+<script src="{% static 'lib/isotope/isotope.pkgd.min.js' %}"></script>
+<script src="{% static 'lib/lightbox/js/lightbox.min.js' %}"></script>
+<!-- Contact Form JavaScript File -->
+<script src="{% static 'contactform/contactform.js' %}c"></script>
+
+<!-- Template Main Javascript File -->
+<script src="{%  static 'js/main.js' %}"></script>
+
+</body>
+</html>
