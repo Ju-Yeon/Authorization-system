@@ -12,23 +12,17 @@ from django.core.mail import EmailMessage
 from .tokens import account_activation_token
 from django.utils.encoding import force_bytes, force_text
 
-from rest_framework import status
-from rest_framework import viewsets
-from rest_framework.response import Response
+from .jwt import verify,sign
 
-import jwt
-import time
-
-JWT_SECRET = 'mysecretkey'
 
 # Create your views here.
 def index(request):
-    if request.COOKIES.get('auth') is None:
+    result = verify(request)
+    if result is None:
         return render(request, 'user/index.html', {})
     else:
-        auth = str(request.COOKIES.get('auth'))
-        print("index_cookies: "+auth)
-        return render(request, 'user/index.html', {'auth': auth})
+        return render(request, 'user/index.html', {'user': result["user"]})
+
 
 def signup(request):
     if request.method == "POST":
@@ -75,9 +69,11 @@ def signup(request):
                     return redirect('/signup')
             else:
                 messages.info(request, "비밀번호 확인이 올바르지 않습니다.")
+                return redirect('/signup')
     else:
         form = SignupForm()
         return render(request, 'user/signup.html', {'form': form})
+
 
 def signin(request):
     if request.method == "POST":
@@ -91,10 +87,8 @@ def signin(request):
 
                 if user[0].password == password:
 
-                    #로그인 인증 토큰 발행
-                    expire_ts = int(time.time()) + 3600
-                    payload = {'useremail': user[0].email, 'expire': expire_ts}
-                    token = jwt.encode(payload, JWT_SECRET, algorithm='HS256').decode()
+                    #로그인시 토큰 발행
+                    token = sign(user[0].email)
 
                     messages.info(request, user[0].name + "님 환영합니다.")
                     response = redirect('/')
@@ -110,7 +104,7 @@ def signin(request):
         form = SigninForm()
         return render(request, 'user/signin.html', {'form': form})
 
-def activate(request, uid64, token):
+def activate(request, uid64, token, response=''):
 
     uid = force_text(urlsafe_base64_decode(uid64))
     user = User.objects.get(pk=uid)
@@ -118,14 +112,21 @@ def activate(request, uid64, token):
     if user is not None and account_activation_token.check_token(user, token):
         user.is_active = True
         user.save()
-        #로그인해주는 부분
-        return redirect('/')
+
+        #로그인 토큰발행
+        token = sign(user.email)
+        messages.info(request, user.name + "님 환영합니다.")
+        response = redirect('/')
+        response.set_cookie('auth', token)
+        return response
     else:
         return HttpResponse('비정상적인 접근입니다.')
 
+
 def signout(request):
     messages.info(request, "사용자 정보가 로그아웃 됩니다.")
-    response = render(request, 'user/index.html')
+
+    response = redirect('/')
     response.delete_cookie('auth')
     return response
 
