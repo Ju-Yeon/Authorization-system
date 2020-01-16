@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Rapid Bootstrap Template</title>
+    <title>Authorization System</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -46,17 +46,20 @@ Header
 
         <div class="logo float-left">
             <!-- Uncomment below if you prefer to use an image logo -->
-            <h1 class="text-light"><a href="#intro" class="scrollto"><span>Rapid</span></a></h1>
+            <h1 class="text-light"><a href="#intro" class="scrollto"><span>Auth</span></a></h1>
             <!-- <a href="#header" class="scrollto"><img src="img/logo.png" alt="" class="img-fluid"></a> -->
         </div>
 
         <nav class="main-nav float-right d-none d-lg-block">
             <ul>
                 <li class="active"><a href="{% url 'index' %}">Home</a></li>
-                <li><a href="#services">Mypage</a></li>
+                {% if user.name %}
+                <li><a href="#">{{ user.name }}'s</a></li>
+                <li><a href="{% url 'signout' %}">Signout</a></li>
+                {% else %}
                 <li><a href="{% url 'signin' %}">Signin</a></li>
                 <li><a href="{% url 'signup' %}">Signup</a></li>
-                <li><a href="#team">Signout</a></li>
+                {% endif %}
             </ul>
         </nav><!-- .main-nav -->
 
@@ -70,9 +73,13 @@ Header
     <div class="container d-flex h-100">
         <div class="row justify-content-center align-self-center">
             <div class="col-md-6 intro-info order-md-first order-last">
-                <h2>Rapid Solutions<br>for Your <span>Business!</span></h2>
+                <h2>Auth System<br>Check<span> Your License</span></h2>
                 <div>
-                    <a href="#about" class="btn-get-started scrollto">Get Started</a>
+                    {% if user %}
+                    <a href="#" class="btn-get-started scrollto">Get Started</a>
+                    {% else%}
+                    <a href="{% url 'signin' %}" class="btn-get-started scrollto">Get Started</a>
+                    {% endif %}
                 </div>
             </div>
 

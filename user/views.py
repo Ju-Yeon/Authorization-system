@@ -12,9 +12,17 @@ from django.core.mail import EmailMessage
 from .tokens import account_activation_token
 from django.utils.encoding import force_bytes, force_text
 
+from .jwt import verify,sign
+
+
 # Create your views here.
 def index(request):
-    return render(request, 'user/index.html', {})
+    result = verify(request)
+    if result is None:
+        return render(request, 'user/index.html', {})
+    else:
+        return render(request, 'user/index.html', {'user': result["user"]})
+
 
 def signup(request):
     if request.method == "POST":
@@ -48,7 +56,7 @@ def signup(request):
                     mail_subject = "회원가입 인증 메일입니다."
                     user_email = email
                     email = EmailMessage(mail_subject, message, to=[user_email])
-                    email.send()
+                    #email.send()
                     return HttpResponse(
                         '<div style="font-size: 40px; width: 100%; height:100%; display:flex; text-align:center; '
                         'justify-content: center; align-items: center; font-family: "Montserrat", "sans-serif";" >'
@@ -61,9 +69,11 @@ def signup(request):
                     return redirect('/signup')
             else:
                 messages.info(request, "비밀번호 확인이 올바르지 않습니다.")
+                return redirect('/signup')
     else:
         form = SignupForm()
         return render(request, 'user/signup.html', {'form': form})
+
 
 def signin(request):
     if request.method == "POST":
@@ -76,8 +86,14 @@ def signin(request):
                 password = hashlib.sha256(temp.encode()).hexdigest()
 
                 if user[0].password == password:
+
+                    #로그인시 토큰 발행
+                    token = sign(user[0].email)
+
                     messages.info(request, user[0].name + "님 환영합니다.")
-                    return redirect('/')
+                    response = redirect('/')
+                    response.set_cookie('auth', token)
+                    return response
                 else:
                     messages.info(request, "비밀번호가 올바르지 않습니다.")
                     return redirect('signin')
@@ -88,7 +104,7 @@ def signin(request):
         form = SigninForm()
         return render(request, 'user/signin.html', {'form': form})
 
-def activate(request, uid64, token):
+def activate(request, uid64, token, response=''):
 
     uid = force_text(urlsafe_base64_decode(uid64))
     user = User.objects.get(pk=uid)
@@ -96,7 +112,22 @@ def activate(request, uid64, token):
     if user is not None and account_activation_token.check_token(user, token):
         user.is_active = True
         user.save()
-        #로그인해주는 부분
-        return redirect('/')
+
+        #로그인 토큰발행
+        token = sign(user.email)
+        messages.info(request, user.name + "님 환영합니다.")
+        response = redirect('/')
+        response.set_cookie('auth', token)
+        return response
     else:
         return HttpResponse('비정상적인 접근입니다.')
+
+
+def signout(request):
+    messages.info(request, "사용자 정보가 로그아웃 됩니다.")
+
+    response = redirect('/')
+    response.delete_cookie('auth')
+    return response
+
+
