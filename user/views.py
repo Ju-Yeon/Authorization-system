@@ -12,9 +12,23 @@ from django.core.mail import EmailMessage
 from .tokens import account_activation_token
 from django.utils.encoding import force_bytes, force_text
 
+from rest_framework import status
+from rest_framework import viewsets
+from rest_framework.response import Response
+
+import jwt
+import time
+
+JWT_SECRET = 'mysecretkey'
+
 # Create your views here.
 def index(request):
-    return render(request, 'user/index.html', {})
+    if request.COOKIES.get('auth') is None:
+        return render(request, 'user/index.html', {})
+    else:
+        auth = str(request.COOKIES.get('auth'))
+        print("index_cookies: "+auth)
+        return render(request, 'user/index.html', {'auth': auth})
 
 def signup(request):
     if request.method == "POST":
@@ -48,7 +62,7 @@ def signup(request):
                     mail_subject = "회원가입 인증 메일입니다."
                     user_email = email
                     email = EmailMessage(mail_subject, message, to=[user_email])
-                    email.send()
+                    #email.send()
                     return HttpResponse(
                         '<div style="font-size: 40px; width: 100%; height:100%; display:flex; text-align:center; '
                         'justify-content: center; align-items: center; font-family: "Montserrat", "sans-serif";" >'
@@ -76,8 +90,16 @@ def signin(request):
                 password = hashlib.sha256(temp.encode()).hexdigest()
 
                 if user[0].password == password:
+
+                    #로그인 인증 토큰 발행
+                    expire_ts = int(time.time()) + 3600
+                    payload = {'useremail': user[0].email, 'expire': expire_ts}
+                    token = jwt.encode(payload, JWT_SECRET, algorithm='HS256').decode()
+
                     messages.info(request, user[0].name + "님 환영합니다.")
-                    return redirect('/')
+                    response = redirect('/')
+                    response.set_cookie('auth', token)
+                    return response
                 else:
                     messages.info(request, "비밀번호가 올바르지 않습니다.")
                     return redirect('signin')
@@ -100,3 +122,11 @@ def activate(request, uid64, token):
         return redirect('/')
     else:
         return HttpResponse('비정상적인 접근입니다.')
+
+def signout(request):
+    messages.info(request, "사용자 정보가 로그아웃 됩니다.")
+    response = render(request, 'user/index.html')
+    response.delete_cookie('auth')
+    return response
+
+
