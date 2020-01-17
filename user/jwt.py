@@ -2,13 +2,15 @@ from user.models import User
 import jwt
 import time
 
+from django.core.cache import cache
+
 JWT_SECRET = 'mysecretkey'
 
 def get_authorization_header(request):
-    if request.COOKIES.get('auth') is None:
+    if request.COOKIES.get('auth_cookie') is None:
             return None
     else:
-        auth = str(request.COOKIES.get('auth'))
+        auth = str(request.COOKIES.get('auth_cookie'))
     return auth
 
 
@@ -24,6 +26,10 @@ def verify(request):
     if not token:
         return None
 
+    #redis 값 검증
+    if token != cache.get('auth_redis'):
+        return None
+
     # token 디코딩
     payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
 
@@ -31,6 +37,7 @@ def verify(request):
     expire = payload.get('expire')
     if int(time.time()) > expire:
         return None
+
     # user 객체
     useremail = payload.get('useremail')
     if not useremail:
