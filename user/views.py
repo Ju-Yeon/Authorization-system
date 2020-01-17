@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, HttpResponse
 from django.contrib import messages
 from user.models import User
-from .forms import SigninForm, SignupForm
+from .forms import SigninForm, SignupForm, PasswordForm, ChangeForm
 import hashlib
-import datetime
+
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
@@ -16,6 +16,8 @@ from django.utils.encoding import force_bytes, force_text
 from .jwt import verify,sign
 
 from django.core.cache import cache
+
+from django.urls import resolve
 
 
 # Create your views here.
@@ -46,8 +48,8 @@ def signup(request):
                     user.save()
 
                     #비밀번호암호화
-                    user_in_db = User.objects.get(name = name)
-                    temp = str(user_in_db.id) + password + str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+                    user_in_db = User.objects.get(email = email)
+                    temp = str(user_in_db.id) + password;
                     user_in_db.password = hashlib.sha256(temp.encode()).hexdigest()
                     user_in_db.save()
 
@@ -64,7 +66,7 @@ def signup(request):
                     mail_subject = "회원가입 인증 메일입니다."
                     user_email = email
                     email = EmailMessage(mail_subject, message, to=[user_email])
-                    #email.send()
+                    email.send()
                     return HttpResponse(
                         '<div style="font-size: 40px; width: 100%; height:100%; display:flex; text-align:center; '
                         'justify-content: center; align-items: center; font-family: "Montserrat", "sans-serif";" >'
@@ -85,12 +87,12 @@ def signup(request):
 
 def signin(request):
     if request.method == "POST":
-        
         form = SigninForm(request.POST)
         if form.is_valid():
             user = User.objects.filter(email=str(request.POST["email"]))
-            if user.count() == 1 and user[0].is_actisve == 1:
-                temp = str(request.POST["password"])
+            if user.count() == 1 and user[0].is_active == 1:
+
+                temp = str(user[0].id) + request.POST["password"]
                 password = hashlib.sha256(temp.encode()).hexdigest()
 
                 if user[0].password == password:
@@ -115,7 +117,7 @@ def signin(request):
         return render(request, 'user/signin.html', {'form': form})
 
 
-def activate(request, uid64, token, response=''):
+def activate(request, uid64, token, response=None):
 
     uid = force_text(urlsafe_base64_decode(uid64))
     user = User.objects.get(pk=uid)
@@ -143,4 +145,75 @@ def signout(request):
     response.delete_cookie('auth_cookie')
     return response
 
+def password(request):
+    if request.method == "POST":
+        form = PasswordForm(request.POST)
 
+        if form.is_valid():
+            user = User.objects.filter(email=str(request.POST["email"]))
+
+            if user.count == 1 and user[0].name == str(request.POST["name"]):
+
+                # 이메일인증
+                current_site = get_current_site(request)
+                message = render_to_string('user/user_password_email.html', {
+                    'user': user[0],
+                    'domain': current_site.domain,
+                    'uid': urlsafe_base64_encode(force_bytes(user[0].pk)).decode(),
+                    'token': account_activation_token.make_token(user[0]),
+                })
+
+                mail_subject = "비밀번호 인증 이메일입니다."
+                user_email = user[0].email
+                email = EmailMessage(mail_subject, message, to=[user_email])
+                email.send()
+                return HttpResponse(
+                    '<div style="font-size: 40px; width: 100%; height:100%; display:flex; text-align:center; '
+                    'justify-content: center; align-items: center; font-family: "Montserrat", "sans-serif";" >'
+                    '입력하신 이메일<span>로 비밀번호 변경 인증 링크가 전송되었습니다.</span>'
+                    '</div>'
+                )
+                return redirect('/')
+
+            else:
+                messages.info(request, "해당하는 이메일과 이름이 존재하지 않습니다.")
+                return render(request, 'user/lostPassword.html')
+
+        else:
+            messages.info(request, "입력이 올바르지 않습니다다.")
+            return render(request, 'user/lostPassword.html')
+
+    else:
+        form = PasswordForm()
+        return render(request, 'user/lostPassword.html', {'form': form})
+
+
+def change(request, uid64=None, token=None, response=None):
+    if request.method == "POST":
+        form = ChangeForm(request.POST)
+        email = request.POST["email"]
+        if form.is_valid():
+            if request.POST["confirm_password"] == request.POST["password"]:
+                    user = User.objects.get(email=str(request.POST["email"]))
+                    password = request.POST["password"]
+                    temp = str(user.id) + password;
+                    print(temp)
+                    user.password = hashlib.sha256(temp.encode()).hexdigest()
+                    user.save()
+                    return redirect('index')
+            else:
+                messages.info(request, "비밀번호 확인이 올바르지 않습니.")
+                return render(request,'user/changePassword.html',{'form':form, 'email':email})
+        else:
+            messages.info(request, "입력이 올바르지 않습니다다.")
+            return render(request,'user/changePassword.html',{'form':form, 'email':email})
+
+    else:
+        uid = force_text(urlsafe_base64_decode(uid64))
+        user = User.objects.get(pk=uid)
+
+        if user is not None and account_activation_token.check_token(user, token):
+            form = ChangeForm()
+            return render(request, 'user/changePassword.html', {'form': form, 'email': user.email})
+        else:
+            return HttpResponse('비정상적인 접근입니다.')
