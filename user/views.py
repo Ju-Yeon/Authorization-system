@@ -3,6 +3,7 @@ from django.contrib import messages
 from user.models import User
 from .forms import SigninForm, SignupForm
 import hashlib
+import datetime
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
@@ -14,13 +15,17 @@ from django.utils.encoding import force_bytes, force_text
 
 from .jwt import verify,sign
 
+from django.core.cache import cache
+
 
 # Create your views here.
 def index(request):
     result = verify(request)
     if result is None:
+        print("none")
         return render(request, 'user/index.html', {})
     else:
+        print("user")
         return render(request, 'user/index.html', {'user': result["user"]})
 
 
@@ -30,22 +35,25 @@ def signup(request):
         if form.is_valid():
             if str(request.POST["password"]) == str(request.POST["confirm_password"]):
                 name = str(request.POST["name"])
-
-                temp = str(request.POST["password"])
-                password = hashlib.sha256(temp.encode()).hexdigest()
-
+                password = str(request.POST["password"])
                 email = str(request.POST["email"])
 
                 user_in_db = User.objects.filter(email = email)
                 if user_in_db.count() == 0:
-                    user = User(name = name, password = password, email = email)
+                    user = User(name = name, password = "", email = email)
                     #user = form.save(commit = False)
                     user.is_active = False
                     user.save()
 
+                    #비밀번호암호화
+                    user_in_db = User.objects.get(name = name)
+                    temp = str(user_in_db.id) + password + str(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+                    user_in_db.password = hashlib.sha256(temp.encode()).hexdigest()
+                    user_in_db.save()
+
                     #이메일인증
                     current_site = get_current_site(request)
-                    # localhost:8000
+
                     message = render_to_string('user/user_activate_email.html', {
                         'user': user,
                         'domain': current_site.domain,
@@ -81,7 +89,7 @@ def signin(request):
         form = SigninForm(request.POST)
         if form.is_valid():
             user = User.objects.filter(email=str(request.POST["email"]))
-            if user:
+            if user.count() == 1 and user[0].is_actisve == 1:
                 temp = str(request.POST["password"])
                 password = hashlib.sha256(temp.encode()).hexdigest()
 
@@ -89,10 +97,12 @@ def signin(request):
 
                     #로그인시 토큰 발행
                     token = sign(user[0].email)
+                    cache.set('auth_redis', token, 60 * 60)
+                    print("cache is: "+cache.get('auth_redis'))
 
                     messages.info(request, user[0].name + "님 환영합니다.")
                     response = redirect('/')
-                    response.set_cookie('auth', token)
+                    response.set_cookie('auth_cookie', token)
                     return response
                 else:
                     messages.info(request, "비밀번호가 올바르지 않습니다.")
@@ -103,6 +113,7 @@ def signin(request):
     else:
         form = SigninForm()
         return render(request, 'user/signin.html', {'form': form})
+
 
 def activate(request, uid64, token, response=''):
 
@@ -115,9 +126,11 @@ def activate(request, uid64, token, response=''):
 
         #로그인 토큰발행
         token = sign(user.email)
+        cache.set('auth_redis', token, 60 * 60)
+
         messages.info(request, user.name + "님 환영합니다.")
         response = redirect('/')
-        response.set_cookie('auth', token)
+        response.set_cookie('auth_cookie', token)
         return response
     else:
         return HttpResponse('비정상적인 접근입니다.')
@@ -127,7 +140,7 @@ def signout(request):
     messages.info(request, "사용자 정보가 로그아웃 됩니다.")
 
     response = redirect('/')
-    response.delete_cookie('auth')
+    response.delete_cookie('auth_cookie')
     return response
 
 
