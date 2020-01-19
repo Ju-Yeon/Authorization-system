@@ -27,7 +27,7 @@ def verify(request):
         return None
 
     #redis 값 검증
-    if cache.get(token):
+    if cache.get(token)is None:
         return None
 
     # token 디코딩
