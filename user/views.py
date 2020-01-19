@@ -24,10 +24,9 @@ from django.urls import resolve
 def index(request):
     result = verify(request)
     if result is None:
-        print("none")
+        print("user is not exist or token was not valuable")
         return render(request, 'user/index.html', {})
     else:
-        print("user")
         return render(request, 'user/index.html', {'user': result["user"]})
 
 
@@ -151,7 +150,7 @@ def password(request):
         if form.is_valid():
             user = User.objects.filter(email=str(request.POST["email"]))
 
-            if user.count == 1 and user[0].name == str(request.POST["name"]):
+            if user.count() == 1 and str(user[0].name) == str(request.POST["name"]):
 
                 # 이메일인증
                 current_site = get_current_site(request)
@@ -190,21 +189,25 @@ def password(request):
 def change(request, uid64=None, token=None, response=None):
     if request.method == "POST":
         form = ChangeForm(request.POST)
-        email = request.POST["email"]
+        email = str(request.POST["email"])
         if form.is_valid():
-            if request.POST["confirm_password"] == request.POST["password"]:
-                    user = User.objects.get(email=str(request.POST["email"]))
-                    password = request.POST["password"]
-                    temp = str(user.id) + password;
-                    print(temp)
-                    user.password = hashlib.sha256(temp.encode()).hexdigest()
-                    user.save()
-                    return redirect('index')
+            if str(request.POST["confirm_password"]) == str(request.POST["password"]):
+                    user = User.objects.filter(email=str(request.POST["email"]))
+                    if user.count() == 1:
+                        password = str(request.POST["password"])
+                        temp = str(user[0].id) + password
+                        user[0].password = hashlib.sha256(temp.encode()).hexdigest()
+                        user[0].save()
+                        messages.info(request, "비밀번호가 변경되었습니다.")
+                        return redirect('index')
+                    else:
+                        messages.info(request, "해당하는 이메일이 존재하지 않습니다.")
+                        return render(request, 'user/changePassword.html', {'form': form, 'email': email})
             else:
-                messages.info(request, "비밀번호 확인이 올바르지 않습니.")
+                messages.info(request, "비밀번호 확인이 올바르지 않습니다.")
                 return render(request,'user/changePassword.html',{'form':form, 'email':email})
         else:
-            messages.info(request, "입력이 올바르지 않습니다다.")
+            messages.info(request, "입력이 올바르지 않습니다.")
             return render(request,'user/changePassword.html',{'form':form, 'email':email})
 
     else:
