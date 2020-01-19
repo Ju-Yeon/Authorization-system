@@ -219,3 +219,14 @@ def change(request, uid64=None, token=None, response=None):
             return render(request, 'user/changePassword.html', {'form': form, 'email': user.email})
         else:
             return HttpResponse('비정상적인 접근입니다.')
+
+
+def admin(request):
+    users = User.objects.exclude(name='admin')
+    return render(request, 'user/admin.html',{'users':users})
+
+def delete(request,id):
+    user = User.objects.get(id=id)
+    user.delete()
+    messages.info(request, "선택하신 계정이 삭제되었습니다.")
+    return redirect('admin')
