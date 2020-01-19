@@ -7,10 +7,10 @@ from django.core.cache import cache
 JWT_SECRET = 'mysecretkey'
 
 def get_authorization_header(request):
-    if request.COOKIES.get('auth_cookie') is None:
+    if request.COOKIES.get('auth') is None:
             return None
     else:
-        auth = str(request.COOKIES.get('auth_cookie'))
+        auth = str(request.COOKIES.get('auth'))
     return auth
 
 
@@ -27,7 +27,7 @@ def verify(request):
         return None
 
     #redis 값 검증
-    if token != cache.get('auth_redis'):
+    if cache.get(token):
         return None
 
     # token 디코딩

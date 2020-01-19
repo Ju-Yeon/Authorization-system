@@ -97,12 +97,11 @@ def signin(request):
 
                     #로그인시 토큰 발행
                     token = sign(user[0].email)
-                    cache.set('auth_redis', token, 60 * 60)
-                    print("cache is: "+cache.get('auth_redis'))
+                    cache.set(token, user[0].id, 60 * 60)
 
                     messages.info(request, user[0].name + "님 환영합니다.")
                     response = redirect('/')
-                    response.set_cookie('auth_cookie', token)
+                    response.set_cookie('auth', token)
                     return response
                 else:
                     messages.info(request, "비밀번호가 올바르지 않습니다.")
@@ -122,15 +121,15 @@ def activate(request, uid64, token, response=''):
 
     if user is not None and account_activation_token.check_token(user, token):
         user.is_active = True
-        user.save()
 
         #로그인 토큰발행
         token = sign(user.email)
-        cache.set('auth_redis', token, 60 * 60)
+        cache.set(token, user.id, 60 * 60)
+        user.save()
 
         messages.info(request, user.name + "님 환영합니다.")
         response = redirect('/')
-        response.set_cookie('auth_cookie', token)
+        response.set_cookie('auth', token)
         return response
     else:
         return HttpResponse('비정상적인 접근입니다.')
@@ -140,7 +139,7 @@ def signout(request):
     messages.info(request, "사용자 정보가 로그아웃 됩니다.")
 
     response = redirect('/')
-    response.delete_cookie('auth_cookie')
+    response.delete_cookie('auth')
     return response
 
 
