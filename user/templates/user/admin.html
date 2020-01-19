@@ -36,7 +36,7 @@
     ======================================================= -->
 </head>
 
-<body>
+<body style = "background: #f5f8fd;">
 <!--==========================
 Header
 ============================-->
@@ -53,53 +53,58 @@ Header
         <nav class="main-nav float-right d-none d-lg-block">
             <ul>
                 <li class="active"><a href="{% url 'index' %}">Home</a></li>
-                {% if user.name %}
-                    {% if user.name == 'admin' %}
-                        <li><a href="{% url 'admin' %}">{{ user.name }}'s</a></li>
-                    {% else %}
-                        <li><a href="#">{{ user.name }}'s</a></li>
-                    {% endif %}
-                    <li><a href="{% url 'signout' %}">Signout</a></li>
-                {% else %}
                 <li><a href="{% url 'signin' %}">Signin</a></li>
                 <li><a href="{% url 'signup' %}">Signup</a></li>
-                {% endif %}
             </ul>
         </nav><!-- .main-nav -->
 
     </div>
 </header><!-- #header -->
 
-<!--==========================
-  Intro Section
-============================-->
-<section id="intro" class="clearfix">
-    <div class="container d-flex h-100">
-        <div class="row justify-content-center align-self-center">
-            <div class="col-md-6 intro-info order-md-first order-last">
-                <h2>Auth System<br>Check<span> Your License</span></h2>
-                <div>
-                    {% if user %}
-                    <a href="#" class="btn-get-started scrollto">Get Started</a>
-                    {% else%}
-                    <a href="{% url 'signin' %}" class="btn-get-started scrollto">Get Started</a>
-                    {% endif %}
-                </div>
-            </div>
 
-            <div class="col-md-6 intro-img order-md-last order-first">
-                <img src="{% static 'img/intro-img.svg' %}" alt="" class="img-fluid">
+
+<div class="container" style="font-family: 'Montserrat', 'sans-serif'; align-content: center; margin-top:10%; height: 600px; width: 100% ">
+    <div class="container ">
+        <div class="row justify-content-center align-self-center">
+            <div class="text-center">
+                <h4>Members</h4>
+                <br>
+                <table class="table ">
+              <thead>
+                <tr>
+                    <th class="col-xs-4">이름</th>
+                    <th class="col-xs-10">이메일</th>
+                    <th class="col-xs-2">인증여부</th>
+                    <th class="col-xs-2">삭제</th>
+                </tr>
+              </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td> {{ user.name }} </td>
+                            <td> {{ user.email }} </td>
+                            <td> {{ user.is_active }} </td>
+
+                            <td> <p><a href="{% url 'delete' user.id %}">삭제</a></p>  </td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                    </table>
             </div>
         </div>
-
     </div>
-</section><!-- #intro -->
+</div>
+
+
+
+
 
 
 <!--==========================
   Footer
 ============================-->
-<footer id="footer" class="section-bg">
+<footer id="footer" class="section-bg" style = "background: #f5f8fd;">
     <div class="container">
         <div class="copyright">
             &copy; Copyright <strong>Rapid</strong>. All Rights Reserved
