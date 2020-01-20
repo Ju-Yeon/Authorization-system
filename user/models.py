@@ -9,6 +9,9 @@ class User(models.Model):
     password = models.CharField(max_length=200)
     is_active = models.BooleanField(default=False)
 
-
+    def encrypt_password(self):
+        temp = self.id + self.password;
+        self.password = hashlib.sha256(temp.encode()).hexdigest()
+        self.save()
 
 
