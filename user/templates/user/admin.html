@@ -53,8 +53,8 @@ Header
         <nav class="main-nav float-right d-none d-lg-block">
             <ul>
                 <li class="active"><a href="{% url 'index' %}">Home</a></li>
-                <li><a href="{% url 'signin' %}">Signin</a></li>
-                <li><a href="{% url 'signup' %}">Signup</a></li>
+                <li><a href="{% url 'admin' %}">{{ user.name }}'s</a></li>
+                 <li><a href="{% url 'signout' %}">Signout</a></li>
             </ul>
         </nav><!-- .main-nav -->
 
